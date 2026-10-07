@@ -1,0 +1,14 @@
+# Local settings, machine-specific and never shared.
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# macOS
+.DS_Store
+
+# Eval runs. The cases and their graders are the artifact; a scored run is a
+# timestamped result for the machine that ran it.
+evals/results/

@@ -1,0 +1,12 @@
+{
+  "name": "architecture-discovery",
+  "description": "Guided architecture discovery interview for a system that has not been built yet. Emits a reviewable infrastructure spec, Mermaid diagrams, ADRs and an open-questions log, then generates the Terraform that implements it.",
+  "version": "1.0.0",
+  "agents": ["./agents/iac-builder.md", "./agents/iac-planner.md", "./agents/iac-validator.md"],
+  "author": {
+    "name": "Rohit Solanki"
+  },
+  "homepage": "https://github.com/imrohitsolanki/architecture-discovery-skill",
+  "repository": "https://github.com/imrohitsolanki/architecture-discovery-skill",
+  "license": "MIT"
+}

@@ -1,0 +1,109 @@
+# Every check this repository has, on every push and pull request.
+#
+# The three harnesses are run by hand during development and were, until this
+# workflow existed, run only when somebody remembered. A harness nobody runs is
+# documentation.
+#
+# It also closes a gap the local harnesses cannot: `fmt` and `validate` are skipped
+# there because they need both IaC binaries and a reachable registry. CI has both, so
+# the two gates that were exercised on a maintainer's machine are exercised on every
+# commit here.
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # Pinned, for the same reason the generated stacks pin their providers: a floating
+  # version means the build changes under you, and a checker that changed silently is
+  # worse than one that failed loudly.
+  GITLEAKS_VERSION: "8.30.1"
+  TERRAGRUNT_VERSION: "1.1.5"
+
+jobs:
+  harnesses:
+    name: harnesses and repository selftest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # 3.9 is the floor `preflight.py` enforces. Testing on the newest Python only
+      # would let a 3.10-ism reach a teammate who is on what the manifest allows.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          sudo tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Repository selftest
+        run: python3 scripts/check_repo.py
+
+      - name: Discovery gate harness
+        run: python3 skills/discover/scripts/selftest.py
+
+      - name: Generation gate harness
+        run: python3 skills/iac/scripts/selftest.py
+
+  stack:
+    name: the fixture stack, through all nine gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          sudo tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          set -euo pipefail
+          curl -sSfL -o /tmp/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
+          sudo install -m 0755 /tmp/terragrunt /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: Build the clean fixture stack
+        run: python3 .github/scripts/build_fixture.py /tmp/fixture
+
+      - name: All nine gates, with fmt and validate actually running
+        run: |
+          set -euo pipefail
+          python3 skills/iac/scripts/check_iac.py \
+            --state /tmp/fixture/artifacts/discovery-state.json \
+            --tf-dir /tmp/fixture/stack \
+            --artifacts /tmp/fixture/artifacts | tee /tmp/summary.txt
+
+      # A gate that did not run has not passed. This job exists to make the two that
+      # are skipped locally actually run, so a summary containing a "did not run"
+      # marker means the job is green on the strength of checks that never happened.
+      - name: Refuse a green run where a gate did not run
+        run: |
+          set -euo pipefail
+          if grep -q '\[----\]' /tmp/summary.txt; then
+            echo "A gate did not run, which is not the same as passing."
+            exit 1
+          fi
+
+      - name: The hook denies an apply against a generated stack
+        run: python3 .github/scripts/check_hook_denies.py /tmp/fixture/stack

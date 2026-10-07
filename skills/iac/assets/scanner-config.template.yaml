@@ -1,0 +1,76 @@
+# .checkov.yaml — the policy scanner's configuration for this stack.
+#
+# Copy this to the root of the generated tree, next to `root.hcl`, and delete every
+# suppression that does not apply. `check_iac.py` runs the scanner from the stack
+# root with this file named explicitly, so a suppression here is in force for the
+# gate as well as for a scanner run by hand.
+#
+# For tfsec, trivy or terrascan the file name and the key names differ — `.tfsec.yml`,
+# `trivy.yaml`, `terrascan.toml` — but nothing else about this does. The convention
+# below is the part worth copying.
+#
+# spec: domain 09a — the pre-apply policy scanner the interview chose
+#
+# ---------------------------------------------------------------------------
+# The convention, and why it is worth the words
+#
+# One id per line, with a reason directly above it. A bare list of ids is a list of
+# things somebody once decided, with no way to tell a false positive from a real gap
+# that was accepted, from a real gap that was forgotten. Three categories, and the
+# comment says which:
+#
+#   FALSE POSITIVE — the tool cannot see what this stack does. Nothing to fix.
+#   DECIDED        — the specification settled this differently, on purpose.
+#                    Name the ADR or the waiver.
+#   DEFERRED       — a real gap, accepted for now, with an owner and a date.
+#
+# A DEFERRED entry with no owner and no date is a dismissal wearing a suppression's
+# clothes. Give it both, so it reads as work rather than as a decision.
+#
+# Anything DECIDED belongs in `discovery-state.json` as a waiver as well, with the
+# check id in the `control` field: `check_iac.py` matches scanner check ids against
+# waivers, so the state file stays the single record of what was accepted and by
+# whom, and this file carries only what is genuinely not a finding.
+# ---------------------------------------------------------------------------
+
+directory:
+  - .
+
+quiet: true
+compact: true
+
+skip-check:
+  # --- FALSE POSITIVE: how a Terragrunt stack is composed -------------------
+  # The scanner analyses one module at a time and cannot see a security group
+  # being attached by another module's unit, so this fires on every group in a
+  # multi-module stack. Any Terragrunt layout hits it.
+  - CKV2_AWS_5
+
+  # --- FALSE POSITIVE: checks that contradict each other --------------------
+  # CKV2_AWS_64 requires an explicit KMS key policy. The account-root statement
+  # AWS requires in every key policy is `kms:*` on `*`, which then trips the
+  # wildcard-action and wildcard-resource checks. One of the two fires whatever
+  # is written, so the pair is resolved once, here, rather than by each reader
+  # spending an hour rediscovering it.
+  # - CKV_AWS_109
+  # - CKV_AWS_111
+  # - CKV_AWS_356
+
+  # --- DECIDED: the specification settled this differently ------------------
+  # Example, and it must be edited before use — an unedited example suppression
+  # is the one thing this template must not ship into a real stack:
+  # Log retention is 90 days per ADR-00N and the cost ceiling in domain 13; the
+  # check's floor is a year. Recorded as a waiver in discovery-state.json.
+  # - CKV_AWS_338
+
+  # --- DEFERRED: a real gap, owned, with a date -----------------------------
+  # Example, edit or delete:
+  # Access logging on the artifact bucket. Real gap. Owner: <name>. By: <date>.
+  # Tracked as OQ-N in open-questions.md.
+  # - CKV_AWS_18
+
+# Paths the scanner should not read. Downloaded rather than written, and never
+# committed, so a finding in one is a finding in somebody else's code.
+skip-path:
+  - .terraform
+  - .terragrunt-cache

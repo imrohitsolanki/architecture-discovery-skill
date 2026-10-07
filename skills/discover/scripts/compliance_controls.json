@@ -1,0 +1,114 @@
+{
+  "_note": "Machine-readable obligations for the compliance gate. The prose and the reasoning live in references/compliance/<regime>.md; this file is what the gate checks against. The two are kept in step by hand; references/compliance/README.md says why both exist. Every entry maps an obligation to a proposed control and the evidence an assessor would ask for. Nothing here asserts that a control satisfies the obligation: that determination belongs to the named owner and, where required, to an auditor. `sourced: false` means the primary text was not read during the build, so the gate refuses to report on it rather than presenting an empty or second-hand control list as coverage. Where the primary text states a number — a reporting deadline, a retention floor — the control carries a `verify` line naming what a reviewer has to confirm against the recorded answers. It is prose rather than a check: this gate reports which domains were answered, and whether an answer meets a deadline is a reading of the answer rather than of its presence.",
+  "regimes": {
+    "gdpr": {
+      "title": "General Data Protection Regulation (EU) 2016/679",
+      "citation": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+      "sourced": true,
+      "residency": "eu",
+      "controls": [
+        {"id": "gdpr-transfer", "obligation": "Restrictions on transferring personal data outside the EEA (Chapter V)", "proposed_control": "Keep processing and backups in an EEA region; where a transfer is unavoidable, record the Article 46 mechanism relied on", "evidence": "Region configuration, backup destinations, and the transfer mechanism documented per data flow", "domains": ["04-cloud", "12-data-dr"]},
+        {"id": "gdpr-minimisation", "obligation": "Data minimisation and purpose limitation (Article 5)", "proposed_control": "Record which fields each service stores and why; exclude anything with no stated purpose", "evidence": "Data inventory mapping field to purpose to retention", "domains": ["03-compliance", "12-data-dr"]},
+        {"id": "gdpr-erasure", "obligation": "Right to erasure and rectification (Articles 16-17)", "proposed_control": "A documented deletion path covering primary stores, backups, logs and analytics copies", "evidence": "The deletion runbook, and a test showing a subject's data gone from every copy including backups", "domains": ["12-data-dr", "10-observability"]},
+        {"id": "gdpr-security", "obligation": "Security of processing (Article 32)", "proposed_control": "Encryption in transit and at rest, least privilege, and tested restore", "evidence": "Encryption settings, IAM policy review, and a dated restore test result", "domains": ["08-identity", "11-security", "12-data-dr"]},
+        {"id": "gdpr-breach", "obligation": "Notification of a personal data breach within 72 hours (Articles 33-34)", "proposed_control": "Detection that can identify affected records, plus a named notification owner and a rehearsed path", "evidence": "Alerting configuration, the incident runbook, and the outcome of an exercise", "verify": "The 72-hour clock needs detection that can scope which records were touched, not only that a breach happened. Confirm the domain 10 answer keeps the audit trail that scoping needs, and that the runbook names who starts the clock.", "domains": ["10-observability", "11-security", "14-team"]},
+        {"id": "gdpr-processors", "obligation": "Processor and sub-processor obligations (Article 28)", "proposed_control": "Maintain a sub-processor register covering every third party that touches personal data, cloud providers included", "evidence": "The register, and the data processing agreement for each entry", "domains": ["03-compliance", "09-delivery"]}
+      ]
+    },
+    "dpdp": {
+      "title": "Digital Personal Data Protection Act, 2023 (India), and the DPDP Rules 2025",
+      "citation": "https://www.indiacode.nic.in/handle/123456789/22037 ; rules: https://www.meity.gov.in/documents/act-and-policies/digital-personal-data-protection-rules-2025-gDOxUjMtQWa",
+      "sourced": true,
+      "residency": "india",
+      "controls": [
+        {"id": "dpdp-notice-consent", "obligation": "Notice and consent for processing personal data", "proposed_control": "A consent record per purpose, versioned, with withdrawal handled as a first-class path", "evidence": "Consent store schema and a withdrawal trace end to end", "domains": ["03-compliance", "12-data-dr"]},
+        {"id": "dpdp-transfer", "obligation": "Restrictions on transfer outside India as set by government notification", "proposed_control": "Default to an Indian region for primary and DR; treat any transfer as a decision requiring a recorded basis", "evidence": "Region configuration and backup destinations, with the basis recorded per transfer", "domains": ["04-cloud", "12-data-dr"]},
+        {"id": "dpdp-erasure", "obligation": "Erasure once the purpose is served or consent is withdrawn", "proposed_control": "Retention period per data class, enforced by lifecycle policy rather than by intent", "evidence": "Lifecycle configuration and a deletion test covering backups and logs", "domains": ["12-data-dr", "10-observability"]},
+        {"id": "dpdp-safeguards", "obligation": "Reasonable security safeguards to prevent a personal data breach", "proposed_control": "Encryption in transit and at rest, least privilege, and no publicly reachable data stores", "evidence": "Encryption settings, IAM review, and a network reachability report for every data store", "domains": ["07-networking", "08-identity", "11-security"]},
+        {"id": "dpdp-breach", "obligation": "Intimation of a personal data breach to the Board and to affected persons", "proposed_control": "Detection able to scope affected records, with a named owner for intimation", "evidence": "Alerting configuration and the incident runbook naming the owner", "domains": ["10-observability", "14-team"]},
+        {"id": "dpdp-grievance", "obligation": "A grievance redressal mechanism and a published point of contact", "proposed_control": "A published contact route and a tracked queue with a response target", "evidence": "The published contact, and the queue with response times", "domains": ["03-compliance", "14-team"]}
+      ]
+    },
+    "pci-dss": {
+      "title": "PCI DSS v4.0.1",
+      "citation": "https://www.pcisecuritystandards.org/document_library/ ; the 51 future-dated v4 requirements have been mandatory in assessments since 31 March 2025: https://blog.pcisecuritystandards.org/now-is-the-time-for-organizations-to-adopt-the-future-dated-requirements-of-pci-dss-v4-x",
+      "sourced": true,
+      "residency": null,
+      "controls": [
+        {"id": "pci-scope", "obligation": "Define the cardholder data environment and everything connected to it", "proposed_control": "Segment the CDE so that non-CDE workloads are demonstrably out of scope", "evidence": "A network diagram and data-flow diagram showing the segmentation boundary, plus segmentation testing", "domains": ["07-networking", "05-environments"]},
+        {"id": "pci-segmentation", "obligation": "Restrict inbound and outbound traffic to that which is necessary (Requirement 1)", "proposed_control": "Default-deny at the boundary and between tiers, with each allowed flow justified", "evidence": "Rule sets with a business justification per rule, reviewed at the required interval", "domains": ["07-networking"]},
+        {"id": "pci-keys", "obligation": "Protect stored account data and manage cryptographic keys (Requirements 3 and 12)", "proposed_control": "Keys held in a managed HSM or KMS with split custody, rotation, and no key material in application configuration", "evidence": "Key custody records, rotation history, and proof no key material appears in configuration or images", "domains": ["08-identity"]},
+        {"id": "pci-logging", "obligation": "Log and monitor all access to system components and cardholder data (Requirement 10)", "proposed_control": "Central, tamper-evident logs retained at least twelve months with three months immediately available", "evidence": "Retention configuration, immutability settings, and a restore of an older period", "domains": ["10-observability"]},
+        {"id": "pci-vuln", "obligation": "Identify and address vulnerabilities, and test regularly (Requirements 6 and 11)", "proposed_control": "Image and dependency scanning in the pipeline with a remediation window, plus internal and external penetration testing", "evidence": "Scanner output over time, the remediation record, and the latest penetration test report", "domains": ["09-delivery", "11-security"]},
+        {"id": "pci-access", "obligation": "Restrict access by business need to know and authenticate all access (Requirements 7 and 8)", "proposed_control": "Role-based access through an identity provider with multi-factor authentication, and no shared accounts", "evidence": "Role definitions, an access review with dates, and MFA enforcement configuration", "domains": ["08-identity"]},
+        {"id": "pci-ecommerce", "obligation": "Payment page script integrity and change detection (Requirements 6.4.3 and 11.6.1)", "proposed_control": "An inventory of scripts on the payment page with integrity checking, and change detection on the page headers and content", "evidence": "The script inventory with authorisation per script, and change-detection alerts", "domains": ["11-security", "09-delivery"]}
+      ]
+    },
+    "rbi": {
+      "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, RBI/2023-24/107, 7 November 2023",
+      "citation": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562",
+      "sourced": true,
+      "residency": "india",
+      "applicability_note": "Addressed to a named list of entity types including scheduled commercial banks excluding RRBs, small finance banks, payments banks, NBFCs, credit information companies and All India Financial Institutions. Whether it binds this client is a question for the client, not an inference from their sector.",
+      "controls": [
+        {"id": "rbi-governance", "obligation": "Board-level IT governance with defined roles and an IT strategy committee", "proposed_control": "Record who owns IT risk and how architecture decisions reach them", "evidence": "Committee terms of reference and minutes referencing this architecture", "domains": ["14-team", "03-compliance"]},
+        {"id": "rbi-bcp", "obligation": "Business continuity and disaster recovery with periodic testing", "proposed_control": "A DR tier matched to a stated RTO and RPO, with drills at a defined cadence", "evidence": "The DR runbook and dated drill results with measured recovery times", "domains": ["12-data-dr"]},
+        {"id": "rbi-audit", "obligation": "Information systems audit as an independent function", "proposed_control": "Keep architecture, change and access records in a form an auditor can sample", "evidence": "Change history, access review records, and the audit plan covering this system", "domains": ["09-delivery", "08-identity"]},
+        {"id": "rbi-vendor", "obligation": "Management of risk arising from third parties and service providers", "proposed_control": "A register of every third party in the data path, cloud providers included, with a review cadence", "evidence": "The register and the most recent review for each entry", "domains": ["03-compliance", "09-delivery"]},
+        {"id": "rbi-incident", "obligation": "Cyber incident response, reporting and root cause analysis", "proposed_control": "A named responder, a reporting path to the regulator, and root cause analysis as a required step", "evidence": "The incident runbook, the reporting path, and a completed root cause analysis", "domains": ["10-observability", "11-security", "14-team"]},
+        {"id": "rbi-data-localisation", "obligation": "Storage requirements for payment and customer data in India", "proposed_control": "Primary and DR in Indian regions, with any processing outside India recorded and justified", "evidence": "Region configuration and a data-flow map showing where each class of data rests", "domains": ["04-cloud", "12-data-dr"]}
+      ]
+    },
+    "sebi": {
+      "title": "SEBI Cybersecurity and Cyber Resilience Framework (CSCRF), circular SEBI/HO/ITD-1/ITD_CSC_EXT/P/CIR/2024/113, August 2024, with subsequent clarifications and an implementation extension",
+      "citation": "https://www.sebi.gov.in/legal/circulars/aug-2024/cybersecurity-and-cyber-resilience-framework-cscrf-for-sebi-regulated-entities-res-_85964.html",
+      "sourced": true,
+      "residency": "india",
+      "applicability_note": "The framework applies different requirements by entity classification: market infrastructure institutions, qualified regulated entities, mid-size, small-size and self-certification. Which class applies determines whether assessment is third-party or self-assessment, so the class must be established before any control list is meaningful.",
+      "controls": [
+        {"id": "sebi-class", "obligation": "Establish the entity's classification under the framework", "proposed_control": "Record the classification, since it sets the assessment method and cadence", "evidence": "The classification determination, and the basis for it", "domains": ["03-compliance"]},
+        {"id": "sebi-risk-assessment", "obligation": "Periodic cyber risk assessment of the IT environment, including scenario-based testing", "proposed_control": "A scheduled assessment covering internal and external risk, with scenarios recorded", "evidence": "The assessment report and the scenarios tested", "domains": ["11-security"]},
+        {"id": "sebi-soc", "obligation": "Security operations monitoring, with a market SOC route available to smaller entities", "proposed_control": "Either an owned SOC capability or onboarding to the market SOC, with the choice recorded", "evidence": "The monitoring arrangement and its coverage", "domains": ["10-observability", "14-team"]},
+        {"id": "sebi-resilience", "obligation": "Cyber resilience goals of anticipate, withstand, contain and recover", "proposed_control": "Map each goal to a specific control in this architecture rather than to a policy statement", "evidence": "The mapping, and evidence for each mapped control", "domains": ["11-security", "12-data-dr"]},
+        {"id": "sebi-audit", "obligation": "Third-party or self-assessment of cyber resilience at the cadence set for the entity class", "proposed_control": "Schedule the assessment to the cadence the class requires", "evidence": "The assessment report at the required interval", "domains": ["03-compliance"]}
+      ]
+    },
+    "ifsca": {
+      "title": "IFSCA Guidelines on Cyber Security and Cyber Resilience for Regulated Entities in IFSCs, circular IFSCA-CSD0MSC/13/2025-DCS, 10 March 2025",
+      "citation": "https://ifsca.gov.in/Document/Legal/guidelines-on-cyber-security-and-cyber-resilience-for-regulated-entities-in-ifscs-1-10032025064412.pdf",
+      "sourced": true,
+      "residency": null,
+      "applicability_note": "Applies to regulated entities in an International Financial Services Centre. Whether the client is one is a question for the client.",
+      "controls": [
+        {"id": "ifsca-incident-reporting", "obligation": "Report cyber incidents to the Authority: an interim report within 3 days and a detailed root cause analysis within 30 days", "proposed_control": "An incident path with those two deadlines built in as tasks with owners, not as intentions", "evidence": "The runbook showing both deadlines, and a completed pair from an exercise or a real incident", "verify": "Two hard deadlines — an interim report within 3 days, a root cause analysis within 30 days. Confirm the domain 10 log retention reaches at least 30 days and is queryable, and that both deadlines exist in the runbook as tasks with owners rather than as intentions.", "domains": ["10-observability", "11-security", "14-team"]},
+        {"id": "ifsca-third-party", "obligation": "A collaborative security approach with third parties, setting shared expectations for data security, incident reporting and security standards", "proposed_control": "Contractual and operational expectations recorded per third party, with a risk-based periodic review", "evidence": "The third-party register with expectations and review dates", "domains": ["03-compliance", "09-delivery"]},
+        {"id": "ifsca-training", "obligation": "Regular staff training covering phishing, social engineering, password hygiene and incident reporting", "proposed_control": "A training schedule with completion tracked", "evidence": "Training records with dates and coverage", "domains": ["14-team"]},
+        {"id": "ifsca-resilience", "obligation": "Cyber resilience appropriate to the entity's activities", "proposed_control": "Map resilience to the DR tier, backup testing and monitoring in this architecture", "evidence": "The mapping with evidence per control", "domains": ["11-security", "12-data-dr"]}
+      ]
+    },
+    "hipaa": {
+      "title": "HIPAA Security Rule, 45 CFR Part 164 Subpart C",
+      "citation": "https://www.hhs.gov/hipaa/for-professionals/security/laws-regulations/index.html",
+      "sourced": false,
+      "residency": null,
+      "not_sourced_reason": "The primary text could not be read during the build: the HHS page returned HTTP 403 to a scripted request, which is bot protection rather than a dead link. See LIMITATIONS.md L1. Writing a control list for a health-data regime from memory or from a secondary summary is exactly the failure §8 exists to prevent, so this regime carries no controls until the primary text is read.",
+      "controls": []
+    },
+    "iso-27001": {
+      "title": "ISO/IEC 27001:2022 and Annex A controls",
+      "citation": "https://www.iso.org/standard/27001",
+      "sourced": false,
+      "residency": null,
+      "not_sourced_reason": "The standard is paywalled and iso.org returned HTTP 403 to a scripted request, so Annex A was not read during the build. See LIMITATIONS.md L1. A certification standard's control list reproduced from memory would be both wrong and, being copyrighted text, not ours to reproduce.",
+      "controls": []
+    },
+    "soc2": {
+      "title": "SOC 2, AICPA Trust Services Criteria",
+      "citation": "https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2",
+      "sourced": false,
+      "residency": null,
+      "not_sourced_reason": "The Trust Services Criteria were not fetched during the build at all, so this regime is a stub on the same basis as the other two. This corrects the build plan, which listed SOC 2 among the sourced regimes while LIMITATIONS.md L1 already recorded that it had not been read. The plan was wrong and the limitation was right.",
+      "controls": []
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# One ecosystem, because there is only one set of dependencies here.
+#
+# This repository is stdlib Python and Markdown: no package.json, no
+# requirements.txt, nothing to resolve at install time. What it does depend on is
+# three pinned GitHub Actions, and a pinned action goes stale silently — the build
+# keeps passing on a version nobody has looked at since it was written.
+#
+# What Dependabot cannot see: GITLEAKS_VERSION and TERRAGRUNT_VERSION in
+# checks.yml. Those are fetched with curl from a release URL, which is deliberate
+# (the fixture stack needs both binaries, and a floating version means the build
+# changes under you) but it is outside every dependency ecosystem. Bump them by
+# hand when a gate starts failing on a tooling mismatch — LIMITATIONS.md L19 is the
+# case that already bit.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # One pull request rather than three. These move together, they are read as a
+    # set, and three separate PRs for a version bump each is how a bot trains
+    # people to merge without looking.
+    groups:
+      actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: ci
+    labels:
+      - dependencies
+    open-pull-requests-limit: 3

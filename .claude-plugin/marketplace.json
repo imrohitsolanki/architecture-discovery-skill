@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "architecture-discovery",
+  "description": "Guided architecture discovery interview, and the Terraform generation that follows it.",
+  "owner": {
+    "name": "Rohit Solanki",
+    "url": "https://github.com/imrohitsolanki"
+  },
+  "plugins": [
+    {
+      "name": "architecture-discovery",
+      "description": "Runs a structured infrastructure discovery interview, emits a reviewable spec, Mermaid diagrams, ADRs and an open-questions log, then generates pinned Terraform from it.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
