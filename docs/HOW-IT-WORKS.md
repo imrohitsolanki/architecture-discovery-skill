@@ -165,7 +165,7 @@ Where a change belongs to one phase, its own document has the detail —
 | Support a new Terragrunt CLI spelling | `_tg_hcl` in `check_iac.py` and `TERRAGRUNT_HCL_CLI_FROM`. The 0.78 rename is why that dispatch exists; another one will need the same treatment. |
 | Add a provider to the resource mapping | A table in `skills/iac/references/providers.md`, and its short names in `PROVIDER_NAMESPACES` in `resolve_versions.py` if they are not already resolvable. Nothing in the gates: they check pinning and provenance, not which provider. |
 | Change what a pin may look like | `EXACT_VERSION` in `check_iac.py`, the table in `references/versions.md`, the `hcl_block()` writer in `resolve_versions.py`, and a `selftest.py` case for the shape now refused. |
-| Release | Bump `version` in `.claude-plugin/plugin.json`; that bump *is* the release. Record it in [`CHANGELOG.md`](../CHANGELOG.md). |
+| Release | Run `python3 scripts/bump_version.py X.Y.Z`, which bumps `plugin.json`, both skills and the changelog together; that bump *is* the release. Describe it in [`CHANGELOG.md`](../CHANGELOG.md). |
 
 ### The third harness
 

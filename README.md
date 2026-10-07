@@ -522,6 +522,7 @@ hooks/
   block_mutating_iac.py
 scripts/
   check_repo.py        the third harness: links, grants, versions, routing
+  bump_version.py      sets a new version everywhere it is declared
 .github/
   workflows/checks.yml all three harnesses, plus the two gates they have to skip
   scripts/             what that workflow runs, kept out of the YAML
@@ -580,6 +581,8 @@ and what a change to that list means is in
 The version in `plugin.json` decides when anyone who installed from a marketplace
 receives an update, so bumping it *is* the release. [`CHANGELOG.md`](CHANGELOG.md)
 defines what counts as major, minor and patch for a skill.
+`python3 scripts/bump_version.py X.Y.Z` writes the new version to `plugin.json`,
+every skill and the changelog in one step.
 
 ## Licence
 

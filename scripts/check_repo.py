@@ -142,6 +142,16 @@ def check_skill_frontmatter() -> list[str]:
                 f"plugin.json says {manifest.get('version')}. The manifest version is "
                 f"the release, so a drift here ships one number and announces "
                 f"another.")
+
+    changelog = ROOT / "CHANGELOG.md"
+    if changelog.is_file():
+        latest = re.search(r"(?m)^## \[([\d.]+)\]", changelog.read_text())
+        if not latest or latest.group(1) != manifest.get("version"):
+            problems.append(
+                f"CHANGELOG.md's latest release is "
+                f"{latest.group(1) if latest else 'missing'} but plugin.json says "
+                f"{manifest.get('version')}. A bump with no entry ships a release "
+                f"nobody can read about.")
     return problems
 
 
