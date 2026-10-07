@@ -11,7 +11,7 @@ allowed-tools:
   - Bash(${CLAUDE_SKILL_DIR}/scripts/resolve_versions.py *)
   - Bash(${CLAUDE_SKILL_DIR}/scripts/check_iac.py *)
 metadata:
-  version: "0.5.0"
+  version: "1.0.0"
 compatibility: "Claude Code only. Uses when_to_use, argument-hint and ${CLAUDE_SKILL_DIR} substitution, none of which are in the Agent Skills spec, so this will not upload to claude.ai or package with package_skill.py. It reads the state file the discovery skill writes, so the two ship together."
 license: MIT
 ---
